@@ -40,7 +40,7 @@ public class UserServiceImpl implements UserService {
             throw new BusinessException("账号已被禁用");
         }
         
-        String token = jwtUtils.generateToken(user.getId(), user.getUsername());
+        String token = jwtUtils.generateToken(Long.valueOf(user.getId()), user.getUsername());
         
         LoginVO vo = new LoginVO();
         vo.setToken(token);
