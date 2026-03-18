@@ -26,29 +26,32 @@ public class UserServiceImpl implements UserService {
     private final SysUserRepository sysUserRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtils jwtUtils;
-    
+
     @Override
     public LoginVO login(LoginDTO dto) {
         SysUser user = sysUserRepository.findByUsername(dto.getUsername())
-            .orElseThrow(() -> new BusinessException("用户不存在"));
-        
+                .orElseThrow(() -> new BusinessException("用户不存在"));
+
         if (!passwordEncoder.matches(dto.getPassword(), user.getPassword())) {
             throw new BusinessException("密码错误");
         }
-        
+
         if (user.getStatus() == 0) {
             throw new BusinessException("账号已被禁用");
         }
-        
-        String token = jwtUtils.generateToken(Long.valueOf(user.getId()), user.getUsername());
-        
+
+        // 修改：将MongoDB ObjectId转换为Long
+        Long userId = Long.valueOf(user.getId().hashCode());
+        String token = jwtUtils.generateToken(userId, user.getUsername());
+
         LoginVO vo = new LoginVO();
         vo.setToken(token);
         vo.setUser(toUserVO(user));
-        
+
         return vo;
     }
-    
+
+
     @Override
     public UserVO register(RegisterDTO dto) {
         if (sysUserRepository.existsByUsername(dto.getUsername())) {
@@ -82,6 +85,20 @@ public class UserServiceImpl implements UserService {
             .orElseThrow(() -> new BusinessException("用户不存在"));
         
         return toUserVO(user);
+    }
+    
+    @Override
+    public String getCurrentUserId() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !(auth.getPrincipal() instanceof User)) {
+            throw new BusinessException(401, "未登录");
+        }
+        
+        String username = ((User) auth.getPrincipal()).getUsername();
+        SysUser user = sysUserRepository.findByUsername(username)
+            .orElseThrow(() -> new BusinessException("用户不存在"));
+        
+        return user.getId();
     }
     
     @Override

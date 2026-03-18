@@ -18,6 +18,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -37,6 +39,27 @@ public class ApplicationServiceImpl implements ApplicationService {
             result = appApplicationRepository.findByDeletedIsNull(pageable);
         }
         
+        return result.map(this::toAppVO);
+    }
+    
+    @Override
+    public Page<AppVO> listByStatus(String userId, String status, int page, int size) {
+        Pageable pageable = PageRequest.of(page - 1, size, Sort.by(Sort.Direction.DESC, "updatedAt"));
+        
+        Page<AppApplication> result;
+        if ("archived".equals(status)) {
+            result = appApplicationRepository.findByUserIdAndDeletedIsNull(userId, pageable);
+        } else {
+            result = appApplicationRepository.findByUserIdAndStatusAndDeletedIsNull(userId, status, pageable);
+        }
+        
+        return result.map(this::toAppVO);
+    }
+    
+    @Override
+    public Page<AppVO> search(String userId, String keyword, int page, int size) {
+        Pageable pageable = PageRequest.of(page - 1, size, Sort.by(Sort.Direction.DESC, "updatedAt"));
+        Page<AppApplication> result = appApplicationRepository.searchByUserId(userId, keyword, pageable);
         return result.map(this::toAppVO);
     }
     
@@ -111,6 +134,23 @@ public class ApplicationServiceImpl implements ApplicationService {
         version.setCreatedAt(LocalDateTime.now());
         
         appVersionRepository.save(version);
+    }
+    
+    @Override
+    public Map<String, Object> getStatistics(String userId) {
+        Map<String, Object> stats = new HashMap<>();
+        long total = appApplicationRepository.countByUserIdAndDeletedIsNull(userId);
+        long running = appApplicationRepository.countByUserIdAndStatusAndDeletedIsNull(userId, "running");
+        long draft = appApplicationRepository.countByUserIdAndStatusAndDeletedIsNull(userId, "draft");
+        long published = appApplicationRepository.countByUserIdAndStatusAndDeletedIsNull(userId, "published");
+        long archived = appApplicationRepository.countByUserIdAndStatusAndDeletedIsNull(userId, "archived");
+        
+        stats.put("total", total);
+        stats.put("running", running);
+        stats.put("draft", draft);
+        stats.put("published", published);
+        stats.put("archived", archived);
+        return stats;
     }
     
     private AppVO toAppVO(AppApplication app) {

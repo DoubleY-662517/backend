@@ -12,6 +12,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/app")
 @RequiredArgsConstructor
@@ -26,6 +28,30 @@ public class ApplicationController {
             @RequestParam(defaultValue = "1") Integer current,
             @RequestParam(defaultValue = "10") Integer size) {
         return Result.success(applicationService.list(userId, current, size));
+    }
+    
+    @GetMapping("/listByStatus")
+    public Result<Page<AppVO>> listByStatus(
+            @RequestParam String status,
+            @RequestParam(defaultValue = "1") Integer current,
+            @RequestParam(defaultValue = "10") Integer size) {
+        String userId = userService.getCurrentUserId();
+        return Result.success(applicationService.listByStatus(userId, status, current, size));
+    }
+    
+    @GetMapping("/search")
+    public Result<Page<AppVO>> search(
+            @RequestParam String keyword,
+            @RequestParam(defaultValue = "1") Integer current,
+            @RequestParam(defaultValue = "10") Integer size) {
+        String userId = userService.getCurrentUserId();
+        return Result.success(applicationService.search(userId, keyword, current, size));
+    }
+    
+    @GetMapping("/statistics")
+    public Result<Map<String, Object>> getStatistics() {
+        String userId = userService.getCurrentUserId();
+        return Result.success(applicationService.getStatistics(userId));
     }
     
     @GetMapping("/{id}")

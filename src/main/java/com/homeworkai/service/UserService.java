@@ -13,5 +13,7 @@ public interface UserService {
     
     UserVO getCurrentUser();
     
+    String getCurrentUserId();
+    
     UserVO getUserById(String id);
 }
